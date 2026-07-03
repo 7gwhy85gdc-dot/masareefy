@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-gray-100 text-gray-900 dark:bg-zinc-950 dark:text-zinc-100 font-sans antialiased;
+  overscroll-behavior-y: none;
+  touch-action: manipulation;
+}
+
+input, textarea, select, button { font-family: inherit; }
+
+/* Safe area helpers */
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+/* iOS-like animations */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes pop {
+  0% { transform: scale(0.97); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.anim-sheet { animation: sheet-up 0.32s cubic-bezier(0.32, 0.72, 0, 1); }
+.anim-fade { animation: fade-in 0.25s ease-out; }
+.anim-toast { animation: toast-in 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
+.anim-pop { animation: pop 0.25s ease-out; }
+
+.card {
+  @apply bg-white dark:bg-zinc-900 rounded-3xl shadow-sm p-4;
+}
+
+.press {
+  @apply transition-transform duration-150 active:scale-[0.97];
+}
+
+/* إخفاء شريط التمرير للتبويبات الأفقية */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
