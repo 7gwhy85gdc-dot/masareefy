@@ -4,6 +4,7 @@ import { Sheet, ConfirmSheet } from '../../components/ui/Sheet';
 import { useToast } from '../../components/ui/Toast';
 import { useStore } from '../../store/store';
 import { fmtSAR, uid } from '../../lib/format';
+import { Icon } from '../../components/ui/Icons';
 import type { Recurring } from '../../types';
 
 /** الالتزامات الشهرية المتكررة: اشتراكات، أقساط، إيجار… تُسجَّل تلقائيًا في يومها */
@@ -86,7 +87,10 @@ export function RecurringSection() {
       <section className="card">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold">الالتزامات الشهرية 🔁</h2>
+            <h2 className="flex items-center gap-2 text-base font-bold">
+              <span className="text-brand-600 dark:text-brand-400"><Icon name="repeat" size={18} /></span>
+              الالتزامات الشهرية
+            </h2>
             {total > 0 && <p className="text-xs text-gray-400">إجمالي {fmtSAR(total)} شهريًا — تُسجَّل تلقائيًا في يومها</p>}
           </div>
           <button

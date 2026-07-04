@@ -11,6 +11,7 @@ import { fmtSAR, fmtNum } from '../lib/format';
 import { TransactionItem } from '../features/transactions/TransactionItem';
 import { AddTransactionSheet, type TxPreset } from '../features/transactions/AddTransactionSheet';
 import { OverviewCard } from '../features/analytics/OverviewCard';
+import { Icon, IconCircle, type IconName } from '../components/ui/Icons';
 import type { Transaction } from '../types';
 
 export function HomePage() {
@@ -37,11 +38,11 @@ export function HomePage() {
   const repeatTx = (tx: Transaction) =>
     setRepeatPreset({ amount: tx.amount, categoryId: tx.categoryId, storeName: tx.storeName });
 
-  const quickLinks = [
-    { icon: '🧾', label: 'العمليات', view: 'transactions' as const },
-    { icon: '🎯', label: 'الأهداف', view: 'goals' as const },
-    { icon: '📈', label: 'التحليلات', view: 'analytics' as const },
-    { icon: '💼', label: 'الميزانية', view: 'budgets' as const },
+  const quickLinks: Array<{ icon: IconName; label: string; view: 'transactions' | 'goals' | 'analytics' | 'budgets' }> = [
+    { icon: 'filePlus', label: 'العمليات', view: 'transactions' },
+    { icon: 'target', label: 'الأهداف', view: 'goals' },
+    { icon: 'trending', label: 'التحليلات', view: 'analytics' },
+    { icon: 'wallet', label: 'الميزانية', view: 'budgets' },
   ];
 
   return (
@@ -61,9 +62,7 @@ export function HomePage() {
             </button>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 text-2xl dark:bg-zinc-800">
-              💰
-            </div>
+            <IconCircle name="wallet" size={56} iconSize={26} />
             <div className="flex-1">
               <p className="text-sm text-gray-500 dark:text-zinc-400">الإجمالي</p>
               {budget > 0 ? (
@@ -99,7 +98,7 @@ export function HomePage() {
         {/* ملخص الأسبوع */}
         {thisWeek > 0 && (
           <section className="card flex items-center gap-3 !py-3">
-            <span className="text-xl">📅</span>
+            <span className="text-brand-600 dark:text-brand-400"><Icon name="calendar" size={22} /></span>
             <p className="flex-1 text-sm text-gray-600 dark:text-zinc-300">
               صرفت هذا الأسبوع <b className="text-brand-600 dark:text-brand-400">{fmtSAR(thisWeek)}</b>
               {weekDiffPct !== null && (
@@ -120,7 +119,7 @@ export function HomePage() {
               onClick={() => go(q.view)}
               className="press card flex flex-col items-center gap-1.5 !p-3"
             >
-              <span className="text-2xl">{q.icon}</span>
+              <IconCircle name={q.icon} size={40} iconSize={20} />
               <span className="text-[11px] font-bold text-gray-600 dark:text-zinc-300">{q.label}</span>
             </button>
           ))}

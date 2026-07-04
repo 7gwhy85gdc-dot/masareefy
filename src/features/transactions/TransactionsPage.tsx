@@ -9,6 +9,7 @@ import { sumAmounts } from '../../lib/period';
 import { TransactionItem } from './TransactionItem';
 import { AddTransactionSheet } from './AddTransactionSheet';
 import { StatementImport } from './ImportStatementSheet';
+import { Icon } from '../../components/ui/Icons';
 import type { Transaction } from '../../types';
 
 export function TransactionsPage() {
@@ -87,9 +88,9 @@ export function TransactionsPage() {
                 onClick={open}
                 aria-label="استيراد كشف حساب"
                 title="استيراد كشف حساب الراجحي (PDF)"
-                className="press rounded-2xl bg-white px-3.5 text-lg dark:bg-zinc-900"
+                className="press rounded-2xl bg-white px-3.5 text-gray-600 dark:bg-zinc-900 dark:text-zinc-300"
               >
-                🏦
+                <Icon name="bank" size={19} />
               </button>
             )}
           />

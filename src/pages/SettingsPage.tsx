@@ -6,6 +6,7 @@ import { useNav } from '../components/layout/Nav';
 import { useStore } from '../store/store';
 import { StatementImport } from '../features/transactions/ImportStatementSheet';
 import { backupOverdue } from '../lib/backup';
+import { Icon, IconCircle, type IconName } from '../components/ui/Icons';
 import type { AppState } from '../types';
 
 function Row({ children }: { children: React.ReactNode }) {
@@ -80,7 +81,7 @@ export function SettingsPage() {
 
         {/* البروفايل */}
         <section className="card flex items-center gap-3 anim-pop">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 text-2xl dark:bg-zinc-800">👤</div>
+          <IconCircle name="user" size={56} iconSize={26} />
           <div className="flex-1">
             <input
               value={state.settings.userName}
@@ -150,14 +151,16 @@ export function SettingsPage() {
         {/* اختصارات */}
         <section className={sectionCls}>
           {([
-            ['💼', 'الميزانية', 'budgets'],
-            ['🧾', 'العمليات', 'transactions'],
-            ['📈', 'التحليلات', 'analytics'],
-            ['🎯', 'الأهداف', 'goals'],
-          ] as const).map(([icon, label, view]) => (
+            ['wallet', 'الميزانية', 'budgets'],
+            ['filePlus', 'العمليات', 'transactions'],
+            ['trending', 'التحليلات', 'analytics'],
+            ['target', 'الأهداف', 'goals'],
+          ] as Array<[IconName, string, 'budgets' | 'transactions' | 'analytics' | 'goals']>).map(([icon, label, view]) => (
             <button key={view} type="button" onClick={() => go(view)} className="press block w-full">
               <Row>
-                <span className="flex items-center gap-2.5 text-sm font-bold"><span className="text-lg">{icon}</span> {label}</span>
+                <span className="flex items-center gap-2.5 text-sm font-bold">
+                  <span className="text-gray-500 dark:text-zinc-400"><Icon name={icon} size={19} /></span> {label}
+                </span>
                 <span className="text-gray-300">‹</span>
               </Row>
             </button>
@@ -175,7 +178,9 @@ export function SettingsPage() {
             trigger={(open) => (
               <button type="button" onClick={open} className="press block w-full">
                 <Row>
-                  <span className="flex items-center gap-2.5 text-sm font-bold"><span className="text-lg">🏦</span> استيراد كشف حساب الراجحي (PDF)</span>
+                  <span className="flex items-center gap-2.5 text-sm font-bold">
+                    <span className="text-gray-500 dark:text-zinc-400"><Icon name="bank" size={19} /></span> استيراد كشف حساب الراجحي (PDF)
+                  </span>
                   <span className="text-gray-300">‹</span>
                 </Row>
               </button>
@@ -183,25 +188,33 @@ export function SettingsPage() {
           />
           <button type="button" onClick={exportData} className="press block w-full">
             <Row>
-              <span className="flex items-center gap-2.5 text-sm font-bold"><span className="text-lg">📤</span> تصدير البيانات (JSON)</span>
+              <span className="flex items-center gap-2.5 text-sm font-bold">
+                <span className="text-gray-500 dark:text-zinc-400"><Icon name="export" size={19} /></span> تصدير البيانات (JSON)
+              </span>
               <span className="text-gray-300">‹</span>
             </Row>
           </button>
           <button type="button" onClick={shareBackup} className="press block w-full">
             <Row>
-              <span className="flex items-center gap-2.5 text-sm font-bold"><span className="text-lg">📲</span> مشاركة نسخة لجهاز آخر (AirDrop / واتساب)</span>
+              <span className="flex items-center gap-2.5 text-sm font-bold">
+                <span className="text-gray-500 dark:text-zinc-400"><Icon name="exchange" size={19} /></span> مشاركة نسخة لجهاز آخر (AirDrop / واتساب)
+              </span>
               <span className="text-gray-300">‹</span>
             </Row>
           </button>
           <button type="button" onClick={() => fileRef.current?.click()} className="press block w-full">
             <Row>
-              <span className="flex items-center gap-2.5 text-sm font-bold"><span className="text-lg">📥</span> استيراد البيانات (JSON)</span>
+              <span className="flex items-center gap-2.5 text-sm font-bold">
+                <span className="text-gray-500 dark:text-zinc-400"><Icon name="import" size={19} /></span> استيراد البيانات (JSON)
+              </span>
               <span className="text-gray-300">‹</span>
             </Row>
           </button>
           <button type="button" onClick={() => setConfirmClear(true)} className="press block w-full">
             <Row>
-              <span className="flex items-center gap-2.5 text-sm font-bold text-red-500"><span className="text-lg">🗑️</span> مسح جميع البيانات</span>
+              <span className="flex items-center gap-2.5 text-sm font-bold text-red-500">
+                <Icon name="trash" size={19} /> مسح جميع البيانات
+              </span>
               <span className="text-gray-300">‹</span>
             </Row>
           </button>
