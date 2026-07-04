@@ -45,14 +45,15 @@ export function TransactionItem({ tx, onDelete, onEdit, onRepeat, showDate = tru
     if (!dragging && Math.abs(dx) < 8) return;
     if (!dragging && Math.abs(dy) > Math.abs(dx)) { start.current = null; return; }
     setDragging(true);
-    const next = Math.min(0, Math.max(-maxOpen - 20, start.current.base + dx));
+    // RTL: السحب لليمين (+dx) يكشف الأزرار على اليسار
+    const next = Math.max(0, Math.min(maxOpen + 20, start.current.base + dx));
     setOffset(next);
   };
   const onTouchEnd = () => {
     if (!start.current && !dragging) return;
-    const open = offset < -maxOpen / 2;
+    const open = offset > maxOpen / 2;
     if (open) haptic(8);
-    setOffset(open ? -maxOpen : 0);
+    setOffset(open ? maxOpen : 0);
     setDragging(false);
     start.current = null;
   };
@@ -73,7 +74,7 @@ export function TransactionItem({ tx, onDelete, onEdit, onRepeat, showDate = tru
               type="button"
               onClick={() => runAction(a.fn)}
               className={`flex w-[58px] flex-col items-center justify-center rounded-2xl text-xs font-bold ${a.cls}`}
-              style={{ opacity: Math.min(1, -offset / maxOpen + 0.15) }}
+              style={{ opacity: Math.min(1, offset / maxOpen + 0.15) }}
             >
               <span className="text-base">{a.icon}</span>
               {a.label}
@@ -84,7 +85,7 @@ export function TransactionItem({ tx, onDelete, onEdit, onRepeat, showDate = tru
 
       <div
         className={`relative flex items-center gap-3 bg-white py-3 dark:bg-zinc-900 ${dragging ? '' : 'transition-transform duration-200'}`}
-        style={{ transform: `translateX(${offset}px)` }}
+        style={{ transform: `translateX(${offset}px)`, touchAction: 'pan-y' }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
