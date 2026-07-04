@@ -37,8 +37,7 @@ export function RecurringSection() {
     return [...groups.values()]
       .filter((g) => g.months.size >= 2)
       .filter((g) => !state.recurrings.some((r) => r.name === g.name && r.amount === g.amount))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 3);
+      .sort((a, b) => b.amount - a.amount);
   }, [state.transactions, state.recurrings]);
 
   const openSheet = (r?: Recurring) => {
