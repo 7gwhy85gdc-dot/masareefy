@@ -6,7 +6,7 @@ import { useToast } from '../../components/ui/Toast';
 import { useStore } from '../../store/store';
 import { fmtSAR, fmtDate, uid } from '../../lib/format';
 import { GOAL_ICONS } from '../../lib/categories';
-import type { Goal } from '../../types';
+import type { Goal, Transaction } from '../../types';
 
 export function GoalsPage() {
   const { state, dispatch } = useStore();
@@ -20,6 +20,36 @@ export function GoalsPage() {
   const [date, setDate] = useState('');
   const [icon, setIcon] = useState(GOAL_ICONS[0]);
   const [toDelete, setToDelete] = useState<Goal | null>(null);
+
+  // إضافة مبلغ ادخار لهدف
+  const [savingGoal, setSavingGoal] = useState<Goal | null>(null);
+  const [saveAmount, setSaveAmount] = useState('');
+  const [recordTx, setRecordTx] = useState(true);
+
+  const addSaving = () => {
+    const value = parseFloat(saveAmount);
+    if (!savingGoal || isNaN(value) || value <= 0) return;
+    dispatch({
+      type: 'UPDATE_GOAL',
+      goal: { ...savingGoal, currentAmount: savingGoal.currentAmount + value },
+    });
+    if (recordTx) {
+      const tx: Transaction = {
+        id: uid(),
+        amount: value,
+        categoryId: 'finance',
+        categoryName: 'المالية',
+        storeName: `ادخار — ${savingGoal.title}`,
+        note: 'إضافة لهدف ادخاري',
+        date: new Date().toISOString(),
+        type: 'expense',
+      };
+      dispatch({ type: 'ADD_TX', tx });
+    }
+    showToast(`أضفت ${fmtSAR(value)} لهدف «${savingGoal.title}»`, '🎯');
+    setSavingGoal(null);
+    setSaveAmount('');
+  };
 
   const openSheet = (g?: Goal) => {
     setEditing(g ?? null);
@@ -106,6 +136,15 @@ export function GoalsPage() {
                   <span>{fmtSAR(g.currentAmount)} من {fmtSAR(g.targetAmount)}</span>
                   {g.expectedDate && <span>المتوقع: {fmtDate(g.expectedDate)}</span>}
                 </div>
+                {!done && (
+                  <button
+                    type="button"
+                    onClick={() => { setSavingGoal(g); setSaveAmount(''); setRecordTx(true); }}
+                    className="press mt-3 w-full rounded-2xl bg-brand-50 py-2.5 text-sm font-bold text-brand-700 dark:bg-zinc-800 dark:text-brand-400"
+                  >
+                    ＋ أضف مبلغ للهدف
+                  </button>
+                )}
               </section>
             );
           })
@@ -161,6 +200,34 @@ export function GoalsPage() {
             className="press w-full rounded-2xl bg-brand-500 py-4 text-base font-bold text-white shadow-lg shadow-brand-500/30"
           >
             ✓ حفظ الهدف
+          </button>
+        </div>
+      </Sheet>
+
+      {/* إضافة مبلغ للهدف */}
+      <Sheet open={savingGoal !== null} onClose={() => setSavingGoal(null)} title={`أضف لهدف «${savingGoal?.title ?? ''}»`}>
+        <div className="space-y-4 pt-2">
+          <div className="relative">
+            <input
+              inputMode="decimal"
+              value={saveAmount}
+              onChange={(e) => setSaveAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+              placeholder="المبلغ"
+              autoFocus
+              className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-lg font-bold outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-zinc-700 dark:bg-zinc-800"
+            />
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">ريال</span>
+          </div>
+          <label className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-3 dark:bg-zinc-800">
+            <span className="text-sm font-bold">سجّلها كعملية ادخار في مصروفاتي</span>
+            <input type="checkbox" checked={recordTx} onChange={(e) => setRecordTx(e.target.checked)} className="h-5 w-5 accent-brand-500" />
+          </label>
+          <button
+            type="button"
+            onClick={addSaving}
+            className="press w-full rounded-2xl bg-brand-500 py-4 text-base font-bold text-white shadow-lg shadow-brand-500/30"
+          >
+            ✓ إضافة للهدف
           </button>
         </div>
       </Sheet>

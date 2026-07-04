@@ -7,6 +7,7 @@ import { useStore } from '../../store/store';
 import { currentPeriodExpenses, spentByCategory, totalBudget } from '../../store/selectors';
 import { sumAmounts, periodKey } from '../../lib/period';
 import { fmtSAR, uid } from '../../lib/format';
+import { RecurringSection } from './RecurringSection';
 import type { Budget } from '../../types';
 
 export function BudgetsPage() {
@@ -137,6 +138,9 @@ export function BudgetsPage() {
             </div>
           )}
         </section>
+
+        {/* الالتزامات الشهرية المتكررة */}
+        <RecurringSection />
       </main>
 
       {/* Sheet إضافة/تعديل */}

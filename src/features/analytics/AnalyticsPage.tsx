@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { askExpenses } from '../../lib/ask';
 import { SubHeader } from '../../components/layout/Header';
 import { EmptyState, CategoryIcon } from '../../components/ui/Basics';
 import { useStore } from '../../store/store';
@@ -12,6 +13,10 @@ import { OverviewCard } from './OverviewCard';
 
 export function AnalyticsPage() {
   const { state, categories } = useStore();
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('');
+
+  const ask = () => setAnswer(askExpenses(question, state, categories));
 
   const cur = currentPeriodExpenses(state);
   const prev = currentPeriodExpenses(state, -1);
@@ -60,6 +65,44 @@ export function AnalyticsPage() {
     <>
       <SubHeader title="التحليلات" />
       <main className="mx-auto max-w-lg space-y-4 px-4 pb-32 pt-2">
+        {/* اسأل مصاريفك */}
+        <section className="card anim-pop">
+          <h2 className="mb-2 text-base font-bold">💬 اسأل مصاريفك</h2>
+          <div className="flex gap-2">
+            <input
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && ask()}
+              placeholder="كم صرفت على المقاهي هذا الشهر؟"
+              className="min-w-0 flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-zinc-700 dark:bg-zinc-800"
+            />
+            <button
+              type="button"
+              onClick={ask}
+              className="press shrink-0 rounded-2xl bg-brand-500 px-4 text-sm font-bold text-white"
+            >
+              اسأل
+            </button>
+          </div>
+          <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto">
+            {['كم صرفت على المطاعم هذا الشهر؟', 'كم باقي من الميزانية؟', 'أكثر متجر صرفت فيه؟', 'كم صرفت هذا الأسبوع؟'].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => { setQuestion(s); setAnswer(askExpenses(s, state, categories)); }}
+                className="press shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-[11px] font-semibold text-gray-500 dark:bg-zinc-800 dark:text-zinc-400"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+          {answer && (
+            <p className="anim-pop mt-3 rounded-2xl bg-brand-50 p-3 text-sm font-semibold leading-relaxed text-brand-800 dark:bg-zinc-800 dark:text-brand-300">
+              {answer}
+            </p>
+          )}
+        </section>
+
         {cur.length === 0 && prev.length === 0 ? (
           <div className="card">
             <EmptyState icon="📊" title="لا توجد بيانات للتحليل" subtitle="أضف بعض العمليات وستظهر التحليلات هنا" />

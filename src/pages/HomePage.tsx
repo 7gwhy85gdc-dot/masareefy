@@ -6,9 +6,10 @@ import { ConfirmSheet } from '../components/ui/Sheet';
 import { useToast } from '../components/ui/Toast';
 import { useStore } from '../store/store';
 import { currentPeriodExpenses, totalBudget } from '../store/selectors';
-import { sumAmounts } from '../lib/period';
+import { sumAmounts, expensesIn, lastDays } from '../lib/period';
 import { fmtSAR, fmtNum } from '../lib/format';
 import { TransactionItem } from '../features/transactions/TransactionItem';
+import { AddTransactionSheet, type TxPreset } from '../features/transactions/AddTransactionSheet';
 import { OverviewCard } from '../features/analytics/OverviewCard';
 import type { Transaction } from '../types';
 
@@ -17,6 +18,7 @@ export function HomePage() {
   const { go } = useNav();
   const { showToast } = useToast();
   const [toDelete, setToDelete] = useState<Transaction | null>(null);
+  const [repeatPreset, setRepeatPreset] = useState<TxPreset | null>(null);
 
   const monthTxs = currentPeriodExpenses(state);
   const spent = sumAmounts(monthTxs);
@@ -24,6 +26,16 @@ export function HomePage() {
   const remaining = budget - spent;
   const pct = budget > 0 ? (spent / budget) * 100 : 0;
   const last5 = state.transactions.slice(0, 5);
+
+  // ملخص الأسبوع مقابل الأسبوع الماضي
+  const thisWeek = sumAmounts(expensesIn(state.transactions, lastDays(7)));
+  const prevWeek = sumAmounts(
+    expensesIn(state.transactions, { start: lastDays(14).start, end: lastDays(7).start })
+  );
+  const weekDiffPct = prevWeek > 0 ? Math.round(((thisWeek - prevWeek) / prevWeek) * 100) : null;
+
+  const repeatTx = (tx: Transaction) =>
+    setRepeatPreset({ amount: tx.amount, categoryId: tx.categoryId, storeName: tx.storeName });
 
   const quickLinks = [
     { icon: '🧾', label: 'العمليات', view: 'transactions' as const },
@@ -84,6 +96,21 @@ export function HomePage() {
           )}
         </section>
 
+        {/* ملخص الأسبوع */}
+        {thisWeek > 0 && (
+          <section className="card flex items-center gap-3 !py-3">
+            <span className="text-xl">📅</span>
+            <p className="flex-1 text-sm text-gray-600 dark:text-zinc-300">
+              صرفت هذا الأسبوع <b className="text-brand-600 dark:text-brand-400">{fmtSAR(thisWeek)}</b>
+              {weekDiffPct !== null && (
+                <span className={`mr-1 font-bold ${weekDiffPct > 0 ? 'text-red-500' : 'text-brand-600 dark:text-brand-400'}`}>
+                  {weekDiffPct > 0 ? `▲ أكثر من الأسبوع الماضي بـ ${weekDiffPct}%` : weekDiffPct < 0 ? `▼ أقل من الأسبوع الماضي بـ ${-weekDiffPct}%` : '— مثل الأسبوع الماضي'}
+                </span>
+              )}
+            </p>
+          </section>
+        )}
+
         {/* روابط سريعة */}
         <section className="grid grid-cols-4 gap-3">
           {quickLinks.map((q) => (
@@ -120,7 +147,7 @@ export function HomePage() {
             <>
               <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                 {last5.map((tx) => (
-                  <TransactionItem key={tx.id} tx={tx} onDelete={setToDelete} />
+                  <TransactionItem key={tx.id} tx={tx} onDelete={setToDelete} onRepeat={repeatTx} />
                 ))}
               </div>
               <button
@@ -151,6 +178,12 @@ export function HomePage() {
           setToDelete(null);
         }}
         onCancel={() => setToDelete(null)}
+      />
+
+      <AddTransactionSheet
+        open={repeatPreset !== null}
+        onClose={() => setRepeatPreset(null)}
+        preset={repeatPreset}
       />
     </>
   );

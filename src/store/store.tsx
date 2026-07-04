@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
-import type { AppState, Budget, Category, Goal, Settings, Transaction } from '../types';
+import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
+import type { AppState, Budget, Category, Goal, Recurring, Settings, Transaction } from '../types';
 import { DEFAULT_CATEGORIES } from '../lib/categories';
 import { seedBudgets, seedGoals, seedTransactions } from '../lib/seed';
 import { periodKey } from '../lib/period';
+import { idbLoadState, idbSaveState } from '../lib/backup';
+import { uid } from '../lib/format';
 
 const STORAGE_KEY = 'masareefy-state-v1';
 
@@ -11,6 +13,7 @@ const defaultSettings: Settings = {
   monthStartDay: 1,
   currency: 'ريال سعودي',
   theme: 'light',
+  calendar: 'gregorian',
   seeded: false,
 };
 
@@ -18,10 +21,14 @@ const emptyState: AppState = {
   transactions: [],
   budgets: [],
   goals: [],
+  recurrings: [],
   settings: defaultSettings,
   customCategories: [],
   dismissedAlerts: [],
 };
+
+/** هل بدأنا بدون بيانات محفوظة؟ (لمحاولة الاسترجاع من IndexedDB) */
+let startedFresh = false;
 
 export type Action =
   | { type: 'ADD_TX'; tx: Transaction }
@@ -30,6 +37,10 @@ export type Action =
   | { type: 'DELETE_TX'; id: string }
   | { type: 'UPSERT_BUDGET'; budget: Budget }
   | { type: 'DELETE_BUDGET'; id: string }
+  | { type: 'ADD_RECURRING'; recurring: Recurring }
+  | { type: 'UPDATE_RECURRING'; recurring: Recurring }
+  | { type: 'DELETE_RECURRING'; id: string }
+  | { type: 'POST_RECURRINGS'; txs: Transaction[]; ids: string[]; month: string }
   | { type: 'ADD_GOAL'; goal: Goal }
   | { type: 'UPDATE_GOAL'; goal: Goal }
   | { type: 'DELETE_GOAL'; id: string }
@@ -68,6 +79,23 @@ function reducer(state: AppState, action: Action): AppState {
     }
     case 'DELETE_BUDGET':
       return { ...state, budgets: state.budgets.filter((b) => b.id !== action.id) };
+    case 'ADD_RECURRING':
+      return { ...state, recurrings: [...state.recurrings, action.recurring] };
+    case 'UPDATE_RECURRING':
+      return {
+        ...state,
+        recurrings: state.recurrings.map((r) => (r.id === action.recurring.id ? action.recurring : r)),
+      };
+    case 'DELETE_RECURRING':
+      return { ...state, recurrings: state.recurrings.filter((r) => r.id !== action.id) };
+    case 'POST_RECURRINGS':
+      return {
+        ...state,
+        transactions: [...action.txs, ...state.transactions].sort((a, b) => b.date.localeCompare(a.date)),
+        recurrings: state.recurrings.map((r) =>
+          action.ids.includes(r.id) ? { ...r, lastPosted: action.month } : r
+        ),
+      };
     case 'ADD_GOAL':
       return { ...state, goals: [...state.goals, action.goal] };
     case 'UPDATE_GOAL':
@@ -83,7 +111,11 @@ function reducer(state: AppState, action: Action): AppState {
         ? state
         : { ...state, dismissedAlerts: [...state.dismissedAlerts, action.id] };
     case 'IMPORT':
-      return { ...action.state, settings: { ...defaultSettings, ...action.state.settings, seeded: true } };
+      return {
+        ...emptyState,
+        ...action.state,
+        settings: { ...defaultSettings, ...action.state.settings, seeded: true },
+      };
     case 'CLEAR_ALL':
       return { ...emptyState, settings: { ...defaultSettings, seeded: true, theme: state.settings.theme } };
     default:
@@ -101,7 +133,8 @@ function loadState(): AppState {
   } catch (err) {
     console.error('فشل تحميل البيانات المحفوظة', err);
   }
-  // أول تشغيل: بيانات تجريبية
+  // أول تشغيل: بيانات تجريبية (وقد نسترجع من IndexedDB لاحقًا)
+  startedFresh = true;
   return {
     ...emptyState,
     transactions: seedTransactions(),
@@ -128,7 +161,42 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('فشل حفظ البيانات', err);
     }
+    // مرآة في IndexedDB (حماية إضافية)
+    idbSaveState(state);
   }, [state]);
+
+  // استرجاع من IndexedDB إذا كان localStorage قد مُسح
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (!startedFresh || restoredRef.current) return;
+    restoredRef.current = true;
+    idbLoadState().then((saved) => {
+      if (saved && Array.isArray(saved.transactions) && saved.transactions.length > 0) {
+        dispatch({ type: 'IMPORT', state: saved });
+      }
+    });
+  }, []);
+
+  // تسجيل الالتزامات الشهرية المستحقة تلقائيًا
+  useEffect(() => {
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const due = state.recurrings.filter(
+      (r) => r.active && r.lastPosted !== month && now.getDate() >= r.dayOfMonth
+    );
+    if (due.length === 0) return;
+    const txs: Transaction[] = due.map((r) => ({
+      id: uid(),
+      amount: r.amount,
+      categoryId: r.categoryId,
+      categoryName: r.categoryName,
+      storeName: r.name,
+      note: 'التزام شهري متكرر',
+      date: new Date(now.getFullYear(), now.getMonth(), Math.min(r.dayOfMonth, 28), 9, 0, 0).toISOString(),
+      type: 'expense',
+    }));
+    dispatch({ type: 'POST_RECURRINGS', txs, ids: due.map((r) => r.id), month });
+  }, [state.recurrings]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', state.settings.theme === 'dark');

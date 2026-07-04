@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
+import { haptic } from '../../lib/haptics';
 
 interface ToastCtx {
   showToast: (msg: string, icon?: string) => void;
@@ -11,6 +12,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const timer = useRef<ReturnType<typeof setTimeout>>();
 
   const showToast = useCallback((msg: string, icon = '✅') => {
+    haptic(12);
     setToast({ msg, icon });
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setToast(null), 2200);

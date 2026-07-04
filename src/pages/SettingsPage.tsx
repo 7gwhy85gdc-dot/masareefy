@@ -5,6 +5,7 @@ import { useToast } from '../components/ui/Toast';
 import { useNav } from '../components/layout/Nav';
 import { useStore } from '../store/store';
 import { StatementImport } from '../features/transactions/ImportStatementSheet';
+import { backupOverdue } from '../lib/backup';
 import type { AppState } from '../types';
 
 function Row({ children }: { children: React.ReactNode }) {
@@ -18,18 +19,39 @@ export function SettingsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [confirmClear, setConfirmClear] = useState(false);
 
+  const backupName = () => `masareefy-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  const markBackedUp = () =>
+    dispatch({ type: 'UPDATE_SETTINGS', patch: { lastBackup: new Date().toISOString() } });
+
   const exportData = () => {
     try {
       const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `masareefy-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = backupName();
       a.click();
       URL.revokeObjectURL(url);
+      markBackedUp();
       showToast('تم تصدير البيانات', '📤');
     } catch {
       showToast('تعذر تصدير البيانات', '⚠️');
+    }
+  };
+
+  /** مشاركة نسخة عبر AirDrop / واتساب لنقلها لجهاز آخر */
+  const shareBackup = async () => {
+    try {
+      const file = new File([JSON.stringify(state, null, 2)], backupName(), { type: 'application/json' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'نسخة مصاريفي' });
+        markBackedUp();
+        showToast('تمت المشاركة', '📤');
+      } else {
+        exportData();
+      }
+    } catch {
+      /* أُلغيت المشاركة */
     }
   };
 
@@ -85,6 +107,19 @@ export function SettingsPage() {
             </select>
           </Row>
           <Row>
+            <span className="text-sm font-bold">نظام الشهر</span>
+            <select
+              value={state.settings.calendar}
+              onChange={(e) =>
+                dispatch({ type: 'UPDATE_SETTINGS', patch: { calendar: e.target.value as 'gregorian' | 'hijri' } })
+              }
+              className="rounded-xl bg-gray-100 px-3 py-1.5 text-sm font-bold dark:bg-zinc-800"
+            >
+              <option value="gregorian">ميلادي</option>
+              <option value="hijri">هجري 🌙</option>
+            </select>
+          </Row>
+          <Row>
             <span className="text-sm font-bold">العملة</span>
             <span className="rounded-xl bg-gray-100 px-3 py-1.5 text-sm font-bold text-gray-500 dark:bg-zinc-800 dark:text-zinc-400">
               {state.settings.currency}
@@ -130,6 +165,11 @@ export function SettingsPage() {
         </section>
 
         {/* البيانات */}
+        {state.transactions.length > 10 && backupOverdue(state.settings.lastBackup) && (
+          <div className="anim-pop rounded-3xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 ring-1 ring-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-900/40">
+            ⚠️ مضى وقت على آخر نسخة احتياطية — بياناتك محفوظة على هذا الجهاز فقط، صدّرها أو شاركها الآن.
+          </div>
+        )}
         <section className={sectionCls}>
           <StatementImport
             trigger={(open) => (
@@ -144,6 +184,12 @@ export function SettingsPage() {
           <button type="button" onClick={exportData} className="press block w-full">
             <Row>
               <span className="flex items-center gap-2.5 text-sm font-bold"><span className="text-lg">📤</span> تصدير البيانات (JSON)</span>
+              <span className="text-gray-300">‹</span>
+            </Row>
+          </button>
+          <button type="button" onClick={shareBackup} className="press block w-full">
+            <Row>
+              <span className="flex items-center gap-2.5 text-sm font-bold"><span className="text-lg">📲</span> مشاركة نسخة لجهاز آخر (AirDrop / واتساب)</span>
               <span className="text-gray-300">‹</span>
             </Row>
           </button>

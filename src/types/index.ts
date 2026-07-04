@@ -36,12 +36,28 @@ export interface Goal {
   icon: string;
 }
 
+export type CalendarType = 'gregorian' | 'hijri';
+
 export interface Settings {
   userName: string;
   monthStartDay: number; // بداية الشهر المالي (1-28)
   currency: string;
   theme: 'light' | 'dark';
+  calendar: CalendarType; // نظام الشهر المالي
+  lastBackup?: string; // ISO لآخر نسخة احتياطية
   seeded: boolean;
+}
+
+/** التزام شهري متكرر (اشتراك، قسط، إيجار…) */
+export interface Recurring {
+  id: string;
+  name: string;
+  amount: number;
+  categoryId: string;
+  categoryName: string;
+  dayOfMonth: number; // 1-28
+  active: boolean;
+  lastPosted?: string; // YYYY-MM لآخر شهر سُجّل
 }
 
 export interface AppAlert {
@@ -55,6 +71,7 @@ export interface AppState {
   transactions: Transaction[];
   budgets: Budget[];
   goals: Goal[];
+  recurrings: Recurring[];
   settings: Settings;
   customCategories: Category[];
   dismissedAlerts: string[];

@@ -1,6 +1,7 @@
 import type { AppAlert, AppState, Transaction } from '../types';
 import { expensesIn, financialPeriod, sumAmounts } from '../lib/period';
 import { fmtSAR } from '../lib/format';
+import { backupOverdue } from '../lib/backup';
 
 export function totalBudget(state: AppState): number {
   const b = state.budgets.find((x) => x.categoryId === null);
@@ -8,7 +9,7 @@ export function totalBudget(state: AppState): number {
 }
 
 export function currentPeriodExpenses(state: AppState, offset = 0): Transaction[] {
-  const r = financialPeriod(state.settings.monthStartDay, offset);
+  const r = financialPeriod(state.settings.monthStartDay, offset, new Date(), state.settings.calendar);
   return expensesIn(state.transactions, r);
 }
 
@@ -96,6 +97,16 @@ export function computeAlerts(state: AppState): AppAlert[] {
         body: `صرفك هذا الشهر ${fmtSAR(amount)} مقابل ${fmtSAR(before)} الشهر الماضي.`,
       });
     }
+  }
+
+  // تذكير بالنسخة الاحتياطية
+  if (state.transactions.length > 10 && backupOverdue(state.settings.lastBackup)) {
+    alerts.push({
+      id: `backup-${monthTag}`,
+      level: 'info',
+      title: 'خذ نسخة احتياطية من بياناتك',
+      body: 'مضى أكثر من شهر على آخر نسخة. من «حسابي» صدّر بياناتك أو شاركها لجهاز آخر.',
+    });
   }
 
   return alerts.filter((a) => !state.dismissedAlerts.includes(a.id));

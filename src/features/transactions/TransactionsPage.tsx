@@ -23,6 +23,10 @@ export function TransactionsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [toDelete, setToDelete] = useState<Transaction | null>(null);
   const [toEdit, setToEdit] = useState<Transaction | null>(null);
+  const [repeatPreset, setRepeatPreset] = useState<import('./AddTransactionSheet').TxPreset | null>(null);
+
+  const repeatTx = (tx: Transaction) =>
+    setRepeatPreset({ amount: tx.amount, categoryId: tx.categoryId, storeName: tx.storeName });
 
   const filtered = useMemo(() => {
     const q = query.trim();
@@ -136,7 +140,7 @@ export function TransactionsPage() {
               </div>
               <div className="divide-y divide-gray-50 dark:divide-zinc-800">
                 {txs.map((tx) => (
-                  <TransactionItem key={tx.id} tx={tx} onDelete={setToDelete} onEdit={setToEdit} />
+                  <TransactionItem key={tx.id} tx={tx} onDelete={setToDelete} onEdit={setToEdit} onRepeat={repeatTx} />
                 ))}
               </div>
             </section>
@@ -160,6 +164,7 @@ export function TransactionsPage() {
       />
 
       <AddTransactionSheet open={toEdit !== null} onClose={() => setToEdit(null)} editTx={toEdit} />
+      <AddTransactionSheet open={repeatPreset !== null} onClose={() => setRepeatPreset(null)} preset={repeatPreset} />
     </>
   );
 }
