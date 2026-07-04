@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SubHeader } from '../../components/layout/Header';
 import { EmptyState, Chip } from '../../components/ui/Basics';
 import { ConfirmSheet } from '../../components/ui/Sheet';
@@ -29,8 +29,19 @@ export function TransactionsPage() {
   const repeatTx = (tx: Transaction) =>
     setRepeatPreset({ amount: tx.amount, categoryId: tx.categoryId, storeName: tx.storeName });
 
+  // بحث مؤجل (Debounce) حتى لا يُفلتر آلاف العمليات مع كل حرف
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query.trim()), 200);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const PAGE = 60;
+  const [limit, setLimit] = useState(PAGE);
+  useEffect(() => setLimit(PAGE), [debouncedQuery, catFilter, from, to, minAmount]);
+
   const filtered = useMemo(() => {
-    const q = query.trim();
+    const q = debouncedQuery;
     const min = parseFloat(minAmount);
     return state.transactions.filter((t) => {
       if (catFilter && t.categoryId !== catFilter) return false;
@@ -40,18 +51,20 @@ export function TransactionsPage() {
       if (!isNaN(min) && t.amount < min) return false;
       return true;
     });
-  }, [state.transactions, query, catFilter, from, to, minAmount]);
+  }, [state.transactions, debouncedQuery, catFilter, from, to, minAmount]);
 
-  // تجميع حسب اليوم
+  // عرض تدريجي + تجميع حسب اليوم
+  const visible = useMemo(() => filtered.slice(0, limit), [filtered, limit]);
+  const remaining = filtered.length - visible.length;
   const groups = useMemo(() => {
     const m = new Map<string, Transaction[]>();
-    for (const t of filtered) {
+    for (const t of visible) {
       const k = dayKey(t.date);
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(t);
     }
     return [...m.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
-  }, [filtered]);
+  }, [visible]);
 
   return (
     <>
@@ -133,19 +146,30 @@ export function TransactionsPage() {
             <EmptyState icon="🔍" title="لا توجد عمليات مطابقة" subtitle="جرّب تعديل البحث أو الفلاتر" />
           </div>
         ) : (
-          groups.map(([k, txs]) => (
-            <section key={k} className="card">
-              <div className="mb-1 flex items-center justify-between">
-                <h3 className="text-sm font-extrabold text-gray-500 dark:text-zinc-400">{dayLabel(txs[0].date)}</h3>
-                <span className="text-xs font-bold text-gray-400">{fmtSAR(sumAmounts(txs))}</span>
-              </div>
-              <div className="divide-y divide-gray-50 dark:divide-zinc-800">
-                {txs.map((tx) => (
-                  <TransactionItem key={tx.id} tx={tx} onDelete={setToDelete} onEdit={setToEdit} onRepeat={repeatTx} />
-                ))}
-              </div>
-            </section>
-          ))
+          <>
+            {groups.map(([k, txs]) => (
+              <section key={k} className="card">
+                <div className="mb-1 flex items-center justify-between">
+                  <h3 className="text-sm font-extrabold text-gray-500 dark:text-zinc-400">{dayLabel(txs[0].date)}</h3>
+                  <span className="text-xs font-bold text-gray-400">{fmtSAR(sumAmounts(txs))}</span>
+                </div>
+                <div className="divide-y divide-gray-50 dark:divide-zinc-800">
+                  {txs.map((tx) => (
+                    <TransactionItem key={tx.id} tx={tx} onDelete={setToDelete} onEdit={setToEdit} onRepeat={repeatTx} />
+                  ))}
+                </div>
+              </section>
+            ))}
+            {remaining > 0 && (
+              <button
+                type="button"
+                onClick={() => setLimit((l) => l + 120)}
+                className="press w-full rounded-2xl bg-white py-3.5 text-sm font-bold text-brand-600 shadow-sm dark:bg-zinc-900 dark:text-brand-400"
+              >
+                عرض المزيد ({remaining.toLocaleString('en')} عملية متبقية)
+              </button>
+            )}
+          </>
         )}
       </main>
 

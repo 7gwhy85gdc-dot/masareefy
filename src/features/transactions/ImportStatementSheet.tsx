@@ -23,6 +23,7 @@ export function StatementImport({ trigger }: Props) {
   const [parsed, setParsed] = useState<ParsedTx[] | null>(null);
   const [excluded, setExcluded] = useState<Set<number>>(new Set());
   const [includeIncome, setIncludeIncome] = useState(true);
+  const [previewLimit, setPreviewLimit] = useState(100);
 
   const openPicker = () => {
     setError('');
@@ -48,6 +49,7 @@ export function StatementImport({ trigger }: Props) {
       setParsed(txs);
       setExcluded(excludedIdx);
       setIncludeIncome(true);
+      setPreviewLimit(100);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر قراءة الملف');
       setParsed(null);
@@ -168,7 +170,7 @@ export function StatementImport({ trigger }: Props) {
 
             {/* القائمة */}
             <div className="max-h-72 space-y-1 overflow-y-auto rounded-2xl border border-gray-100 p-2 dark:border-zinc-800">
-              {parsed.map((t, i) => {
+              {parsed.slice(0, previewLimit).map((t, i) => {
                 const cat = catOf(t.categoryId);
                 const hiddenByIncome = !includeIncome && t.direction === 'credit';
                 const checked = !excluded.has(i) && !hiddenByIncome;
@@ -197,6 +199,15 @@ export function StatementImport({ trigger }: Props) {
                   </button>
                 );
               })}
+              {parsed.length > previewLimit && (
+                <button
+                  type="button"
+                  onClick={() => setPreviewLimit((l) => l + 200)}
+                  className="press w-full rounded-xl bg-gray-50 py-2.5 text-xs font-bold text-brand-600 dark:bg-zinc-800 dark:text-brand-400"
+                >
+                  عرض المزيد ({(parsed.length - previewLimit).toLocaleString('en')} عملية متبقية)
+                </button>
+              )}
             </div>
 
             <button

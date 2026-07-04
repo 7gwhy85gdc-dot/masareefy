@@ -20,7 +20,7 @@ function IconBtn({ label, onClick, children }: { label: string; onClick?: () => 
 export function Header() {
   const { go } = useNav();
   const { state } = useStore();
-  const alertCount = computeAlerts(state).length;
+  const alertCount = React.useMemo(() => computeAlerts(state).length, [state]);
 
   return (
     <header className="sticky top-0 z-40 bg-gray-100/90 backdrop-blur-md dark:bg-zinc-950/90 pt-safe">

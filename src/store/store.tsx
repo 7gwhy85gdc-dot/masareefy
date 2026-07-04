@@ -155,15 +155,34 @@ const Ctx = createContext<StoreCtx | null>(null);
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadState);
 
+  // حفظ مؤجل (Debounce) حتى لا تُسلسل آلاف العمليات مع كل تغيير
+  const stateRef = useRef(state);
+  stateRef.current = state;
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (err) {
-      console.error('فشل حفظ البيانات', err);
-    }
-    // مرآة في IndexedDB (حماية إضافية)
-    idbSaveState(state);
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (err) {
+        console.error('فشل حفظ البيانات', err);
+      }
+      idbSaveState(state); // مرآة في IndexedDB (حماية إضافية)
+    }, 400);
+    return () => clearTimeout(t);
   }, [state]);
+
+  // حفظ فوري عند إغلاق/إخفاء التطبيق حتى لا يضيع آخر تغيير
+  useEffect(() => {
+    const flush = () => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stateRef.current));
+      } catch { /* تجاهل */ }
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flush();
+    });
+    return () => window.removeEventListener('pagehide', flush);
+  }, []);
 
   // استرجاع من IndexedDB إذا كان localStorage قد مُسح
   const restoredRef = useRef(false);
